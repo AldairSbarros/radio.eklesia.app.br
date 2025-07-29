@@ -12,8 +12,8 @@ function App() {
           <div className="logo">
             <img src={logoEklesia} alt="Radio Eklesia" className="logo-image" />
             <div className="logo-text">
-              <h1>Radio Eklesia</h1>
-              <span>Sua Rádio Cristã Online</span>
+              <h1>WebRadio Eklesia</h1>
+              <span>Sua WebRadio Cristã Online</span>
             </div>
           </div>
           <nav className="nav">
@@ -45,11 +45,11 @@ function App() {
       {/* About Section */}
       <section className="about" id="sobre">
         <div className="container">
-          <h3>Sobre a Radio Eklesia</h3>
+          <h3>Sobre a WebRadio Eklesia</h3>
           <div className="about-content">
             <div className="about-text">
               <p>
-                A Radio Eklesia nasceu com o propósito de levar a palavra de Deus 
+                A WebRadio Eklesia nasceu com o propósito de levar a palavra de Deus 
                 e música gospel de qualidade para todos os cantos do Brasil e do mundo. 
                 Nossa missão é edificar vidas através da música e da palavra.
               </p>
@@ -140,21 +140,21 @@ function App() {
               <span className="icon">📧</span>
               <div>
                 <h4>Email</h4>
-                <p>contato@radioeklesia.com.br</p>
+                <p>radio@eklesia.com.br</p>
               </div>
             </div>
             <div className="contact-item">
               <span className="icon">📱</span>
               <div>
                 <h4>WhatsApp</h4>
-                <p>(11) 99999-9999</p>
+                <p>(92) 9299203-0250</p>
               </div>
             </div>
             <div className="contact-item">
               <span className="icon">📍</span>
               <div>
-                <h4>Endereço</h4>
-                <p>São Paulo, SP - Brasil</p>
+                <h4>Rua São Judas Tadeu, 290</h4>
+                <p>Manaus, AM - Brasil</p>
               </div>
             </div>
           </div>
@@ -166,7 +166,7 @@ function App() {
         <div className="container">
           <div className="footer-content">
             <div className="footer-logo">
-              <h4>Radio Eklesia</h4>
+              <h4>WebRadio Eklesia</h4>
               <p>Levando a palavra de Deus através da música</p>
             </div>
             <div className="footer-links">
@@ -187,7 +187,7 @@ function App() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 Radio Eklesia. Todos os direitos reservados.</p>
+            <p>&copy; 2025 WebRadio Eklesia - Manaus, AM. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
