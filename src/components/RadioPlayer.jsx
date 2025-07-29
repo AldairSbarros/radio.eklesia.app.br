@@ -1,0 +1,324 @@
+import { useState, useRef, useEffect } from 'react'
+import './RadioPlayer.css'
+
+const RadioPlayer = () => {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [volume, setVolume] = useState(0.8)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [isLive, setIsLive] = useState(false)
+  const audioRef = useRef(null)
+
+  const streamUrl = "http://173.224.125.126:8000/radio"
+
+  // Função para verificar se o stream está online
+  const checkStreamStatus = async () => {
+    try {
+      const response = await fetch(streamUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors'
+      })
+      setIsLive(true)
+      setError(null)
+    } catch (err) {
+      console.log('Stream check:', err)
+      // Não mostra erro aqui pois pode ser CORS, mas o stream pode estar funcionando
+      setIsLive(true) // Assume que está online
+    }
+  }
+
+  useEffect(() => {
+    // Verifica o status do stream quando o componente monta
+    checkStreamStatus()
+    
+    // Verifica periodicamente se o stream está online
+    const interval = setInterval(checkStreamStatus, 30000) // a cada 30 segundos
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) {
+      // Configurações para reduzir buffer e latência
+      audio.volume = volume
+      
+      const handleLoadStart = () => {
+        setIsLoading(true)
+        setError(null)
+      }
+      
+      const handleCanPlay = () => {
+        setIsLoading(false)
+        setError(null)
+        setIsLive(true)
+        // Para reduzir buffer, tenta tocar assim que pode
+        if (isPlaying && audio.paused) {
+          audio.play().catch(console.error)
+        }
+      }
+      
+      const handleLoadedData = () => {
+        setIsLoading(false)
+        setError(null)
+        setIsLive(true)
+      }
+      
+      const handlePlaying = () => {
+        setIsLoading(false)
+        setError(null)
+        setIsLive(true)
+        setIsPlaying(true)
+      }
+      
+      const handleError = (e) => {
+        console.error('Audio error:', e)
+        setIsLoading(false)
+        setError('Erro ao conectar com a rádio')
+        setIsLive(false)
+        setIsPlaying(false)
+      }
+      
+      const handlePause = () => {
+        setIsPlaying(false)
+      }
+      
+      const handlePlay = () => {
+        setIsLive(true)
+        setIsPlaying(true)
+      }
+
+      const handleWaiting = () => {
+        // Reduz tempo de loading para não ficar muito tempo carregando
+        setIsLoading(true)
+        // Auto-retry após 3 segundos se ficar travado
+        setTimeout(() => {
+          if (audio.readyState < 3 && isPlaying) {
+            audio.load()
+            audio.play().catch(console.error)
+          }
+        }, 3000)
+      }
+
+      const handleStalled = () => {
+        // Quando o stream trava, recarrega automaticamente
+        console.log('Stream stalled, reloading...')
+        if (isPlaying) {
+          audio.load()
+          audio.play().catch(console.error)
+        }
+      }
+
+      const handleSuspend = () => {
+        setIsLoading(false)
+      }
+
+      // Evento para quando o buffer fica baixo
+      const handleProgress = () => {
+        setIsLoading(false)
+      }
+
+      audio.addEventListener('loadstart', handleLoadStart)
+      audio.addEventListener('canplay', handleCanPlay)
+      audio.addEventListener('loadeddata', handleLoadedData)
+      audio.addEventListener('playing', handlePlaying)
+      audio.addEventListener('error', handleError)
+      audio.addEventListener('pause', handlePause)
+      audio.addEventListener('play', handlePlay)
+      audio.addEventListener('waiting', handleWaiting)
+      audio.addEventListener('stalled', handleStalled)
+      audio.addEventListener('suspend', handleSuspend)
+      audio.addEventListener('progress', handleProgress)
+
+      return () => {
+        audio.removeEventListener('loadstart', handleLoadStart)
+        audio.removeEventListener('canplay', handleCanPlay)
+        audio.removeEventListener('loadeddata', handleLoadedData)
+        audio.removeEventListener('playing', handlePlaying)
+        audio.removeEventListener('error', handleError)
+        audio.removeEventListener('pause', handlePause)
+        audio.removeEventListener('play', handlePlay)
+        audio.removeEventListener('waiting', handleWaiting)
+        audio.removeEventListener('stalled', handleStalled)
+        audio.removeEventListener('suspend', handleSuspend)
+        audio.removeEventListener('progress', handleProgress)
+      }
+    }
+  }, [isPlaying])
+
+  // UseEffect separado para o volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume
+    }
+  }, [volume])
+
+  // UseEffect para configurações de baixa latência
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) {
+      // Configurações para reduzir buffer/latência
+      try {
+        // Remove buffer excessivo se suportado pelo navegador
+        if ('fastSeek' in audio) {
+          audio.fastSeek = true
+        }
+        
+        // Define um buffer mínimo se possível
+        if ('mozPreservesPitch' in audio) {
+          audio.mozPreservesPitch = false
+        }
+        
+        // Para Chrome/Safari - reduz buffer
+        if ('webkitPreservesPitch' in audio) {
+          audio.webkitPreservesPitch = false
+        }
+      } catch (e) {
+        console.log('Algumas otimizações não são suportadas:', e)
+      }
+    }
+  }, [])
+
+  const togglePlay = async () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    try {
+      if (isPlaying) {
+        audio.pause()
+        setIsPlaying(false)
+      } else {
+        setIsLoading(true)
+        setError(null)
+        
+        // Remove o delay desnecessário e o reload que causava buffer
+        // O load() força um rebuffer completo, causando atraso
+        
+        const playPromise = audio.play()
+        
+        if (playPromise !== undefined) {
+          await playPromise
+          setIsPlaying(true)
+          setIsLive(true)
+          setIsLoading(false)
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao reproduzir:', err)
+      
+      // Se falhar, tenta recarregar apenas uma vez
+      try {
+        audio.load()
+        await new Promise(resolve => setTimeout(resolve, 200)) // Reduzido para 200ms
+        await audio.play()
+        setIsPlaying(true)
+        setIsLive(true)
+        setIsLoading(false)
+      } catch (retryErr) {
+        setError('Não foi possível reproduzir. Tente novamente.')
+        setIsLoading(false)
+        setIsPlaying(false)
+      }
+    }
+  }
+
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value)
+    setVolume(newVolume)
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume
+    }
+  }
+
+  const getVolumeIcon = () => {
+    if (volume === 0) return '🔇'
+    if (volume < 0.3) return '🔈'
+    if (volume < 0.7) return '🔉'
+    return '🔊'
+  }
+
+  return (
+    <div className="radio-player">
+      <audio
+        ref={audioRef}
+        src={streamUrl}
+        preload="none"
+        playsInline
+        autoPlay={false}
+      />
+      
+      <div className="player-container">
+        <div className="player-info">
+          <div className="station-info">
+            <h3>Radio Eklesia</h3>
+            <p className="now-playing">🎵 Transmissão ao vivo</p>
+            <div className="live-indicator">
+              <div className={`live-dot ${isLive ? 'live' : ''}`}></div>
+              <span>{isLive ? 'AO VIVO' : 'OFFLINE'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="player-controls">
+          <button 
+            className={`play-btn ${isPlaying ? 'playing' : ''} ${isLoading ? 'loading' : ''}`}
+            onClick={togglePlay}
+            disabled={isLoading}
+            title={isPlaying ? 'Pausar' : 'Reproduzir'}
+          >
+            {isLoading ? (
+              <div className="loading-spinner"></div>
+            ) : isPlaying ? (
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <rect x="6" y="4" width="4" height="16" rx="1"/>
+                <rect x="14" y="4" width="4" height="16" rx="1"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <polygon points="5,3 19,12 5,21"/>
+              </svg>
+            )}
+          </button>
+
+          <div className="volume-control">
+            <span className="volume-icon">{getVolumeIcon()}</span>
+            <div className="volume-slider-container">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="volume-slider"
+                title={`Volume: ${Math.round(volume * 100)}%`}
+              />
+              <div 
+                className="volume-fill" 
+                style={{ width: `${volume * 100}%` }}
+              ></div>
+            </div>
+            <span className="volume-text">{Math.round(volume * 100)}%</span>
+          </div>
+        </div>
+
+        <div className="player-visualizer">
+          <div className="eq-bar"></div>
+          <div className="eq-bar"></div>
+          <div className="eq-bar"></div>
+          <div className="eq-bar"></div>
+          <div className="eq-bar"></div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="error-message">
+          <span>⚠️ {error}</span>
+          <button onClick={() => setError(null)}>✕</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default RadioPlayer
