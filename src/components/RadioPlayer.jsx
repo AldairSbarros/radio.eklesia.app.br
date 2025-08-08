@@ -7,6 +7,7 @@ const RadioPlayer = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isLive, setIsLive] = useState(false)
+  const [retry, setRetry] = useState(false)
   const audioRef = useRef(null)
 
   const streamUrl = "http://173.224.125.126:8000/radio"
@@ -190,12 +191,8 @@ const RadioPlayer = () => {
       } else {
         setIsLoading(true)
         setError(null)
-        
-        // Remove o delay desnecessário e o reload que causava buffer
-        // O load() força um rebuffer completo, causando atraso
-        
+        setRetry(false)
         const playPromise = audio.play()
-        
         if (playPromise !== undefined) {
           await playPromise
           setIsPlaying(true)
@@ -205,20 +202,10 @@ const RadioPlayer = () => {
       }
     } catch (err) {
       console.error('Erro ao reproduzir:', err)
-      
-      // Se falhar, tenta recarregar apenas uma vez
-      try {
-        audio.load()
-        await new Promise(resolve => setTimeout(resolve, 200)) // Reduzido para 200ms
-        await audio.play()
-        setIsPlaying(true)
-        setIsLive(true)
-        setIsLoading(false)
-      } catch (retryErr) {
-        setError('Não foi possível reproduzir. Tente novamente.')
-        setIsLoading(false)
-        setIsPlaying(false)
-      }
+      setError('Clique novamente para tentar reproduzir. Isso é uma proteção do navegador.')
+      setIsLoading(false)
+      setIsPlaying(false)
+      setRetry(true)
     }
   }
 
@@ -246,7 +233,7 @@ const RadioPlayer = () => {
         playsInline
         autoPlay={false}
       />
-      
+
       <div className="player-container">
         <div className="player-info">
           <div className="station-info">
@@ -314,7 +301,11 @@ const RadioPlayer = () => {
       {error && (
         <div className="error-message">
           <span>⚠️ {error}</span>
-          <button onClick={() => setError(null)}>✕</button>
+          {retry ? (
+            <button onClick={togglePlay} style={{marginLeft: '8px'}}>Tentar novamente</button>
+          ) : (
+            <button onClick={() => setError(null)}>✕</button>
+          )}
         </div>
       )}
     </div>
