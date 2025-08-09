@@ -12,66 +12,22 @@ const RadioPlayer = () => {
 
   const streamUrl = "http://173.224.125.126:8000/radio"
 
-  // Função para verificar se o stream está online
-  const checkStreamStatus = async () => {
-    try {
-      const response = await fetch(streamUrl, { 
-        method: 'HEAD',
-        mode: 'no-cors'
-      })
-      setIsLive(true)
-      setError(null)
-    } catch (err) {
-      console.log('Stream check:', err)
-      // Não mostra erro aqui pois pode ser CORS, mas o stream pode estar funcionando
-      setIsLive(true) // Assume que está online
-    }
-  }
-
-  useEffect(() => {
-    // Verifica o status do stream quando o componente monta
-    checkStreamStatus()
-    
-    // Verifica periodicamente se o stream está online
-    const interval = setInterval(checkStreamStatus, 30000) // a cada 30 segundos
-    
-    return () => clearInterval(interval)
-  }, [])
-
   useEffect(() => {
     const audio = audioRef.current
     if (audio) {
-      // Configurações para reduzir buffer e latência
       audio.volume = volume
-      
-      const handleLoadStart = () => {
-        setIsLoading(true)
-        setError(null)
-      }
-      
+      // Eventos essenciais para funcionamento do player
       const handleCanPlay = () => {
         setIsLoading(false)
         setError(null)
         setIsLive(true)
-        // Para reduzir buffer, tenta tocar assim que pode
-        if (isPlaying && audio.paused) {
-          audio.play().catch(console.error)
-        }
       }
-      
-      const handleLoadedData = () => {
-        setIsLoading(false)
-        setError(null)
-        setIsLive(true)
-      }
-      
       const handlePlaying = () => {
         setIsLoading(false)
         setError(null)
         setIsLive(true)
         setIsPlaying(true)
       }
-      
       const handleError = (e) => {
         console.error('Audio error:', e)
         setIsLoading(false)
@@ -79,70 +35,26 @@ const RadioPlayer = () => {
         setIsLive(false)
         setIsPlaying(false)
       }
-      
       const handlePause = () => {
         setIsPlaying(false)
       }
-      
       const handlePlay = () => {
         setIsLive(true)
         setIsPlaying(true)
       }
 
-      const handleWaiting = () => {
-        // Reduz tempo de loading para não ficar muito tempo carregando
-        setIsLoading(true)
-        // Auto-retry após 3 segundos se ficar travado
-        setTimeout(() => {
-          if (audio.readyState < 3 && isPlaying) {
-            audio.load()
-            audio.play().catch(console.error)
-          }
-        }, 3000)
-      }
-
-      const handleStalled = () => {
-        // Quando o stream trava, recarrega automaticamente
-        console.log('Stream stalled, reloading...')
-        if (isPlaying) {
-          audio.load()
-          audio.play().catch(console.error)
-        }
-      }
-
-      const handleSuspend = () => {
-        setIsLoading(false)
-      }
-
-      // Evento para quando o buffer fica baixo
-      const handleProgress = () => {
-        setIsLoading(false)
-      }
-
-      audio.addEventListener('loadstart', handleLoadStart)
       audio.addEventListener('canplay', handleCanPlay)
-      audio.addEventListener('loadeddata', handleLoadedData)
       audio.addEventListener('playing', handlePlaying)
       audio.addEventListener('error', handleError)
       audio.addEventListener('pause', handlePause)
       audio.addEventListener('play', handlePlay)
-      audio.addEventListener('waiting', handleWaiting)
-      audio.addEventListener('stalled', handleStalled)
-      audio.addEventListener('suspend', handleSuspend)
-      audio.addEventListener('progress', handleProgress)
 
       return () => {
-        audio.removeEventListener('loadstart', handleLoadStart)
         audio.removeEventListener('canplay', handleCanPlay)
-        audio.removeEventListener('loadeddata', handleLoadedData)
         audio.removeEventListener('playing', handlePlaying)
         audio.removeEventListener('error', handleError)
         audio.removeEventListener('pause', handlePause)
         audio.removeEventListener('play', handlePlay)
-        audio.removeEventListener('waiting', handleWaiting)
-        audio.removeEventListener('stalled', handleStalled)
-        audio.removeEventListener('suspend', handleSuspend)
-        audio.removeEventListener('progress', handleProgress)
       }
     }
   }, [isPlaying])
