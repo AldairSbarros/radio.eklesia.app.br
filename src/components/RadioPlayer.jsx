@@ -10,7 +10,7 @@ const RadioPlayer = () => {
   const [retry, setRetry] = useState(false)
   const audioRef = useRef(null)
 
-  const streamUrl = "http://173.224.125.126:8000/radio"
+  const streamUrl = "https://stream.radio.eklesia.app.br/radio"
 
   useEffect(() => {
     const audio = audioRef.current
