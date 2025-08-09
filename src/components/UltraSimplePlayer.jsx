@@ -7,7 +7,7 @@ const UltraSimplePlayer = () => {
   const [error, setError] = useState(null)
   const audioRef = useRef(null)
 
-  const streamUrl = "http://173.224.125.126:8000/radio"
+  const streamUrl = "https://stream.radio.eklesia.app.br/radio"
 
   // UseEffect mínimo apenas para setar volume inicial
   useEffect(() => {
